@@ -1,1 +1,7 @@
-{}
+[
+  {"file_type": "pdf", "encryption": "none"},
+  {"file_type": "database", "encryption": "RSA"},
+  {"file_type": "image", "encryption": "AES"},
+  {"file_type": "database", "encryption": "no_encryption"},
+  {"file_type": "sensitive_data", "encryption": "weak"}
+]
