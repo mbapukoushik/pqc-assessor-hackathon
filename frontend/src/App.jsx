@@ -26,10 +26,13 @@ function App() {
 
   return (
     <div className="app-container">
-      <header className="app-header">
-        <h1>Smart PQC Assessor</h1>
-        <p>Post-Quantum Cryptography Readiness</p>
-      </header>
+      <div className="app-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ color: '#ff3b3b', fontSize: '8px', lineHeight: 1 }}>●</span>
+          <h1 style={{ color: '#ffffff', fontSize: '18px', fontWeight: 600, margin: 0, letterSpacing: '-0.01em' }}>Smart PQC Assessor</h1>
+          <span style={{ color: '#64748b', fontSize: '12px', marginLeft: '12px', fontWeight: 400 }}>Post-Quantum Cryptography Readiness Platform</span>
+        </div>
+      </div>
 
       <main className="content-area">
         {stage === 'upload' && (

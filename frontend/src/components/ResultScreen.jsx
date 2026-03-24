@@ -9,14 +9,13 @@ function ResultScreen({ result, file, onRestart }) {
   
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-  const score = result?.score ?? 50;
   const timeline = result?.timeline ?? null;
 
   // Deriving the 4 stats requested:
   const totalFiles = files.length;
-  const highRiskCount = files.filter(f => f.score >= 70).length; // CHANGED
-  const mediumRiskCount = files.filter(f => f.score >= 50 && f.score < 70).length; // CHANGED
-  const lowRiskCount = files.filter(f => f.score < 50).length; // CHANGED
+  const highRiskCount = files.filter(f => f.score >= 70).length;
+  const mediumRiskCount = files.filter(f => f.score >= 50 && f.score < 70).length;
+  const lowRiskCount = files.filter(f => f.score < 50).length;
 
   const handleFixFile = (fileId) => {
     setFiles((prev) =>
@@ -61,90 +60,78 @@ function ResultScreen({ result, file, onRestart }) {
   };
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-header">
-        <h1>PQC Assessment Report</h1>
-      </div>
-
-      <div className="dashboard-main">
+    <div className="dashboard-container" style={{ margin: '0 auto' }}>
+      <div className="dashboard-main" style={{ padding: '0', background: 'transparent', border: 'none' }}>
         
+        {/* New Summary Bar with Stats + Export Report Button */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          background: 'var(--panel-bg)',
-          border: '1px solid var(--border-color)',
-          padding: '1rem 1.5rem',
-          borderRadius: '12px',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+          background: '#0d1424',
+          border: '1px solid #1e2d47',
+          padding: '1.5rem',
+          borderRadius: '8px',
+          marginBottom: '1.5rem'
         }}>
-          <div style={{ display: 'flex', gap: '2rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Scanned</span>
-              <span style={{ fontSize: '1.2rem', fontWeight: 700, color: '#ffffff' }}>{totalFiles}</span>
+          <div style={{ display: 'flex', gap: '3rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', borderTop: '2px solid #3b82f6', paddingTop: '8px', minWidth: '90px' }}>
+              <span style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em' }}>Total Scanned</span>
+              <span style={{ fontSize: '32px', fontWeight: 700, color: '#e2e8f0', marginTop: '4px' }}>{totalFiles}</span>
             </div>
             
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>🔴 Critical</span> {/* CHANGED */}
-              <span style={{ fontSize: '1.2rem', fontWeight: 700, color: '#ef4444' }}>{highRiskCount}</span> {/* CHANGED */}
+            <div style={{ display: 'flex', flexDirection: 'column', borderTop: '2px solid #ff3b3b', paddingTop: '8px', minWidth: '90px' }}>
+              <span style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em' }}>Critical</span>
+              <span style={{ fontSize: '32px', fontWeight: 700, color: '#ff3b3b', marginTop: '4px' }}>{highRiskCount}</span>
             </div>
             
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>🟡 High</span> {/* CHANGED */}
-              <span style={{ fontSize: '1.2rem', fontWeight: 700, color: '#f59e0b' }}>{mediumRiskCount}</span> {/* CHANGED */}
+            <div style={{ display: 'flex', flexDirection: 'column', borderTop: '2px solid #f59e0b', paddingTop: '8px', minWidth: '90px' }}>
+              <span style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em' }}>High</span>
+              <span style={{ fontSize: '32px', fontWeight: 700, color: '#f59e0b', marginTop: '4px' }}>{mediumRiskCount}</span>
             </div>
             
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>🟢 Low</span> {/* CHANGED */}
-              <span style={{ fontSize: '1.2rem', fontWeight: 700, color: '#4ade80' }}>{lowRiskCount}</span> {/* CHANGED */}
+            <div style={{ display: 'flex', flexDirection: 'column', borderTop: '2px solid #10b981', paddingTop: '8px', minWidth: '90px' }}>
+              <span style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em' }}>Low</span>
+              <span style={{ fontSize: '32px', fontWeight: 700, color: '#10b981', marginTop: '4px' }}>{lowRiskCount}</span>
             </div>
           </div>
 
           <button 
+            className="export-btn"
             onClick={handleDownloadPdf} 
             disabled={isGeneratingPdf || !file}
-            style={{
-              background: '#1e293b',
-              color: '#f8fafc',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              padding: '10px 18px',
-              borderRadius: '8px',
-              cursor: (isGeneratingPdf || !file) ? 'not-allowed' : 'pointer',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'background 0.2s',
-            }}
-            onMouseOver={(e) => {
-              if (!isGeneratingPdf && file) e.currentTarget.style.background = '#334155';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = '#1e293b';
-            }}
           >
             {isGeneratingPdf ? '⏳ Generating...' : '⬇️ Export Report'}
           </button>
         </div>
 
-        <div className="top-section">
-          <PriorityTable
-            files={files}
-            onRowClick={setSelectedFile}
-            selectedFileId={selectedFile?.id}
-          />
-          <FileDetailPanel
-            file={selectedFile}
-            onFixFile={handleFixFile}
-          />
+        {/* Priority Table + File Detail Panel */}
+        <div className="top-section" style={{ display: 'flex', gap: '1.5rem' }}>
+          <div style={{ flex: 2 }}>
+            <PriorityTable
+              files={files}
+              onRowClick={setSelectedFile}
+              selectedFileId={selectedFile?.id}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <FileDetailPanel
+              file={selectedFile}
+              onFixFile={handleFixFile}
+            />
+          </div>
         </div>
 
-        <QuantumTimeline timeline={timeline} />
+        {/* Quantum Timeline */}
+        <div style={{ background: '#0d1424', border: '1px solid #1e2d47', borderRadius: '8px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+          <QuantumTimeline timeline={timeline} />
+        </div>
 
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
           <button
             className="btn"
-            style={{ background: 'transparent', border: '1px solid var(--border-color)' }}
+            style={{ background: 'transparent', border: '1px solid #1e2d47', color: '#e2e8f0', width: 'auto' }}
             onClick={onRestart}
           >
             Scan Another File
