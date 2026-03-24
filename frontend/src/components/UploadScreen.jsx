@@ -29,9 +29,18 @@ function UploadScreen({ onStartScan }) {
     }
   };
 
+  const handleStartScan = () => {
+    if (file) onStartScan(file);
+  };
+
+  const handleLoadSample = () => {
+    const sampleFile = new File(["sample"], "patient_records_2024.py", { type: "text/plain" });
+    onStartScan(sampleFile);
+  };
+
   return (
     <div className="card">
-      <div 
+      <div
         className={`drop-zone ${isDragging ? 'active' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -39,17 +48,19 @@ function UploadScreen({ onStartScan }) {
         onClick={() => fileInputRef.current.click()}
       >
         <div className="drop-icon">📁</div>
-        <h3>Drag & Drop your codebase here</h3>
-        <p className="app-header" style={{margin: '1rem 0 0 0', fontSize: '0.9rem'}}>or click to browse files</p>
-        
-        <input 
-          type="file" 
-          className="file-input" 
-          ref={fileInputRef} 
+        <h3>Drag &amp; Drop your codebase here</h3>
+        <p className="app-header" style={{ margin: '1rem 0 0 0', fontSize: '0.9rem' }}>
+          or click to browse files
+        </p>
+
+        <input
+          type="file"
+          className="file-input"
+          ref={fileInputRef}
           onChange={handleFileChange}
           accept=".zip,.tar,.gz,.rar,.js,.jsx,.ts,.tsx,.py,.java,.cpp,.c,.cs"
         />
-        
+
         {file && (
           <div className="file-name">
             Selected: {file.name}
@@ -57,12 +68,25 @@ function UploadScreen({ onStartScan }) {
         )}
       </div>
 
-      <button 
-        className="btn" 
-        onClick={onStartScan}
+      <button
+        className="btn"
+        onClick={handleStartScan}
         disabled={!file}
+        style={{ marginBottom: '1rem' }}
       >
         Start Scan
+      </button>
+
+      <button
+        className="btn"
+        onClick={handleLoadSample}
+        style={{
+          background: 'transparent',
+          border: '1px solid var(--primary)',
+          color: 'var(--text-main)',
+        }}
+      >
+        ⚡ Load Sample Dataset
       </button>
     </div>
   );

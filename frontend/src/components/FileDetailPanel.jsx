@@ -28,6 +28,7 @@ const FileDetailPanel = ({ file, onFixFile }) => {
   }
 
   const isSecured = file.status === "Secured";
+  const showSndlWarning = file.score >= 65 && !isSecured; // CHANGED
 
   return (
     <div className={`file-detail-panel ${isSecured ? 'secured-panel' : ''}`}>
@@ -35,6 +36,42 @@ const FileDetailPanel = ({ file, onFixFile }) => {
         <h3>File Analysis Details</h3>
         {isSecured && <span className="secured-badge">✓ Secured</span>}
       </div>
+
+      {showSndlWarning && (
+        <div style={{
+          backgroundColor: '#450a0a',
+          borderLeft: '4px solid #ef4444',
+          padding: '1rem',
+          marginBottom: '1.5rem',
+          borderRadius: '4px'
+        }}>
+          <h4 style={{ 
+            color: '#fbbf24', 
+            marginTop: 0, 
+            marginBottom: '0.5rem', 
+            display: 'flex', 
+            alignItems: 'center',
+            fontSize: '1rem'
+          }}>
+            <span style={{
+              display: 'inline-block',
+              width: '8px',
+              height: '8px',
+              backgroundColor: '#ef4444',
+              borderRadius: '50%',
+              marginRight: '8px',
+              boxShadow: '0 0 8px #ef4444',
+              animation: 'pulse 1.5s infinite'
+            }}></span>
+            ⚠️ SNDL Risk Detected
+          </h4>
+          <p style={{ color: '#ffffff', fontSize: '0.85rem', lineHeight: '1.5', margin: 0 }}>
+            This file's encryption may already be targeted by adversaries using "Store Now, Decrypt Later" tactics. 
+            Data encrypted today with RSA or ECC can be harvested now and decrypted once quantum computers are available (est. 2031). 
+            Immediate migration is recommended.
+          </p>
+        </div>
+      )}
 
       <div className="detail-item">
         <strong>File Name:</strong> <span>{file.file}</span>
@@ -73,6 +110,14 @@ const FileDetailPanel = ({ file, onFixFile }) => {
           </div>
         )}
       </div>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes pulse {
+          0% { transform: scale(0.95); opacity: 0.8; }
+          50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 12px #ef4444; }
+          100% { transform: scale(0.95); opacity: 0.8; }
+        }
+      `}} />
     </div>
   );
 };
