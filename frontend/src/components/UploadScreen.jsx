@@ -1,1 +1,71 @@
-// upload screen component
+import { useState, useRef } from 'react';
+
+function UploadScreen({ onStartScan }) {
+  const [file, setFile] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  return (
+    <div className="card">
+      <div 
+        className={`drop-zone ${isDragging ? 'active' : ''}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current.click()}
+      >
+        <div className="drop-icon">📁</div>
+        <h3>Drag & Drop your codebase here</h3>
+        <p className="app-header" style={{margin: '1rem 0 0 0', fontSize: '0.9rem'}}>or click to browse files</p>
+        
+        <input 
+          type="file" 
+          className="file-input" 
+          ref={fileInputRef} 
+          onChange={handleFileChange}
+          accept=".zip,.tar,.gz,.rar,.js,.jsx,.ts,.tsx,.py,.java,.cpp,.c,.cs"
+        />
+        
+        {file && (
+          <div className="file-name">
+            Selected: {file.name}
+          </div>
+        )}
+      </div>
+
+      <button 
+        className="btn" 
+        onClick={onStartScan}
+        disabled={!file}
+      >
+        Start Scan
+      </button>
+    </div>
+  );
+}
+
+export default UploadScreen;
