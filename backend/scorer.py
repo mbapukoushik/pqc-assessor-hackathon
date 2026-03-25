@@ -197,3 +197,61 @@ def get_risk_reasons(file_type: str, encryption: str, filename: str = "") -> lis
     if not reasons:
         reasons.append("Potential cryptographic vulnerability detected")
     return reasons
+
+
+# ─── analyze_code() — Bridge for main.py (Ram/DC's V2 interface) ──────────────
+
+def analyze_code(file_content: str, filename: str = "unknown.py") -> dict:
+    """
+    Top-level scanner function that main.py calls.
+    Runs the AST + regex scan and returns a structured result compatible with
+    Ram's generate_summary(score, issues, quantum_vulnerable) signature.
+
+    Returns:
+        {
+            "score":              int (0-100),
+            "issues":             list[str] (human-readable findings),
+            "quantum_vulnerable": bool (True if any quantum-breakable crypto found),
+        }
+    Always safe — any error returns a conservative fallback result.
+    """
+    try:
+        findings = scan_file_content(file_content, filename)
+
+        # Build human-readable issue list
+        issues = []
+        for w in findings.get("weak_imports", []):
+            issues.append(f"Weak crypto import detected: {w.strip()}")
+        for c in findings.get("hardcoded_creds", []):
+            issues.append(f"Hardcoded secret found: {c.strip()}")
+        for a in findings.get("ast_findings", []):
+            issues.append(f"Vulnerable algorithm usage: {a}")
+
+        # Determine if quantum-breakable algorithms are present
+        quantum_patterns = {"rsa", "ecdh", "md5", "sha1", "des", "rc4"}
+        all_text = " ".join(issues).lower()
+        quantum_vulnerable = any(p in all_text for p in quantum_patterns)
+
+        # Score: start from a code-file baseline (60) then apply boost
+        base = 60
+        boost = findings.get("risk_boost", 0)
+        score = min(base + boost, 100)
+
+        # If nothing suspicious found, lower score indicates clean file
+        if not issues:
+            score = 20
+            issues = ["No critical vulnerabilities detected in static scan."]
+
+        return {
+            "score":              score,
+            "issues":             issues,
+            "quantum_vulnerable": quantum_vulnerable,
+        }
+
+    except Exception as exc:
+        print(f"[scorer] analyze_code error ({exc}) — returning safe fallback")
+        return {
+            "score":              60,
+            "issues":             [f"Scanner error — defaulting to moderate risk: {exc}"],
+            "quantum_vulnerable": False,
+        }

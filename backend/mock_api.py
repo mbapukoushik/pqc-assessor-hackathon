@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from fpdf import FPDF
-from scorer import calculate_risk_score, scan_file_content
+from scorer import calculate_risk_score, scan_file_content, analyze_code
 from report import generate_summary
 from quantum_optimizer import run_qaoa_optimizer
 
@@ -65,7 +65,10 @@ def build_file_entry(file_id: int, filename: str, content: str = ""):
     file_type = get_file_category(filename)
     vuln_label, encryption, keywords = VULN_MAP.get(file_type, DEFAULT_VULN)
     score = calculate_risk_score(file_type, encryption, filename, content)
-    summary = generate_summary(score)
+    # Build a minimal issues list from the known vulnerability label for this file type
+    vuln_issues = [f"{vuln_label} detected in {filename or file_type}"]
+    quantum_vuln = encryption.lower() in ("rsa", "rsa-1024", "ecdh", "tls_old", "weak")
+    summary = generate_summary(score, vuln_issues, quantum_vuln)
     
     # Enrich keywords from AST findings if content was provided
     if content:
@@ -139,7 +142,10 @@ async def analyze(file: UploadFile = File(...)):
         related = [build_file_entry(fid, fname) for fname, fid in related_samples]
         all_files = [primary] + related
         overall_score = max(f["score"] for f in all_files)
-        overall_summary = generate_summary(overall_score)
+        # Collect all issue indicators across files for the summary
+        overall_issues = [f"{f['vulnerability']} in {f['file']}" for f in all_files if f["score"] >= 50]
+        overall_qvuln = any(f.get("encryption", "") in ("rsa", "rsa-1024", "ecdh", "tls_old", "weak") for f in all_files)
+        overall_summary = generate_summary(overall_score, overall_issues, overall_qvuln)
         return {
             "filename":  filename,
             "score":     overall_score,
