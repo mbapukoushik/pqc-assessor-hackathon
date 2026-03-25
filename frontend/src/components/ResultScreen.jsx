@@ -39,20 +39,28 @@ function ResultScreen({ result, file, onRestart }) {
     }
   };
 
-  const handleRunOptimizer = () => {
+  const handleRunOptimizer = async () => {
     setIsOptimizing(true);
-    // Simulate backend QAOA solving for the mathematically perfect set of targets
-    setTimeout(() => {
-      // Sort by highest security risk
+    try {
+      const response = await fetch('http://localhost:8000/api/optimize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files, budget }),
+      });
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
+      const data = await response.json();
+      setOptimizedFiles(data.selected_files);
+      setRiskMitigated(data.total_risk_mitigated);
+    } catch (err) {
+      // Fallback: client-side greedy sort if backend unreachable
+      console.warn('QAOA API unreachable, using greedy fallback:', err.message);
       const sorted = [...files].sort((a, b) => b.score - a.score);
       const selected = sorted.slice(0, budget);
-      
-      const mitigated = selected.reduce((sum, f) => sum + f.score, 0);
-      
       setOptimizedFiles(selected);
-      setRiskMitigated(mitigated);
+      setRiskMitigated(selected.reduce((sum, f) => sum + f.score, 0));
+    } finally {
       setIsOptimizing(false);
-    }, 1500);
+    }
   };
 
   const handleDownloadPdf = async () => {

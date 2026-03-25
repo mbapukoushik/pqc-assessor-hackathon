@@ -1,10 +1,13 @@
 from datetime import datetime
+from typing import List, Optional
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 from fpdf import FPDF
-from scorer import calculate_risk_score
+from scorer import calculate_risk_score, scan_file_content
 from report import generate_summary
+from quantum_optimizer import run_qaoa_optimizer
 
 app = FastAPI(title="PQC Assessor Mock API")
 
@@ -58,11 +61,22 @@ def get_file_category(filename: str):
     ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     return EXTENSION_TO_TYPE.get(ext, "sensitive_data")
 
-def build_file_entry(file_id: int, filename: str):
+def build_file_entry(file_id: int, filename: str, content: str = ""):
     file_type = get_file_category(filename)
     vuln_label, encryption, keywords = VULN_MAP.get(file_type, DEFAULT_VULN)
-    score = calculate_risk_score(file_type, encryption)
+    score = calculate_risk_score(file_type, encryption, filename, content)
     summary = generate_summary(score)
+    
+    # Enrich keywords from AST findings if content was provided
+    if content:
+        try:
+            findings = scan_file_content(content, filename)
+            ast_keywords = [f.split(".")[0] for f in findings.get("ast_findings", [])]
+            extra = findings.get("weak_imports", []) + ast_keywords
+            keywords = list(dict.fromkeys(keywords + [k.strip() for k in extra if k.strip()]))[:6]
+        except Exception:
+            pass
+    
     return {
         "id":            file_id,
         "file":          filename,
@@ -110,20 +124,57 @@ def pick_timeline_phase(score: int) -> dict:
 
 @app.post("/api/analyze")
 async def analyze(file: UploadFile = File(...)):
-    filename = file.filename or "unknown_file"
-    primary = build_file_entry(1, filename)
-    related_samples = [("auth_config.py", 2), ("database.js", 3), ("legacy_api.java", 4)]
-    related = [build_file_entry(fid, fname) for fname, fid in related_samples]
-    all_files = [primary] + related
-    overall_score = max(f["score"] for f in all_files)
-    overall_summary = generate_summary(overall_score)
-    return {
-        "filename":  filename,
-        "score":     overall_score,
-        "summary":   overall_summary,
-        "files":     all_files,
-        "timeline":  pick_timeline_phase(overall_score),
-    }
+    try:
+        filename = file.filename or "unknown_file"
+        
+        # V2: Read actual file content for AST scanning
+        raw_bytes = await file.read()
+        try:
+            content = raw_bytes.decode("utf-8", errors="ignore")
+        except Exception:
+            content = ""  # fallback to extension-only scoring
+        
+        primary = build_file_entry(1, filename, content)
+        related_samples = [("auth_config.py", 2), ("database.js", 3), ("legacy_api.java", 4)]
+        related = [build_file_entry(fid, fname) for fname, fid in related_samples]
+        all_files = [primary] + related
+        overall_score = max(f["score"] for f in all_files)
+        overall_summary = generate_summary(overall_score)
+        return {
+            "filename":  filename,
+            "score":     overall_score,
+            "summary":   overall_summary,
+            "files":     all_files,
+            "timeline":  pick_timeline_phase(overall_score),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+
+# V2: Quantum QAOA Optimizer endpoint
+class OptimizeFile(BaseModel):
+    id: int
+    file: str
+    score: int
+    vulnerability: Optional[str] = ""
+    risk_level: Optional[str] = ""
+    action: Optional[str] = ""
+    status: Optional[str] = ""
+    type: Optional[str] = ""
+    keywords: Optional[List[str]] = []
+
+class OptimizeRequest(BaseModel):
+    files: List[OptimizeFile]
+    budget: int
+
+@app.post("/api/optimize")
+async def optimize(request: OptimizeRequest):
+    try:
+        files_list = [f.model_dump() for f in request.files]
+        result = run_qaoa_optimizer(files_list, request.budget)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Optimizer failed: {str(e)}")
 
 @app.post("/api/report")
 async def generate_report(file: UploadFile = File(...)):
