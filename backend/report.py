@@ -1,22 +1,26 @@
-def generate_summary(score):
-
-    if score >= 70: # CHANGED
-        return {
-            "status": "CRITICAL", # CHANGED
-            "action": "Fix immediately",
-            "reason": "Sensitive data with weak encryption or critical vulnerability"
-        }
-
-    elif score >= 50:
-        return {
-            "status": "HIGH", # CHANGED
-            "action": "Review soon",
-            "reason": "Moderate sensitivity or encryption risk"
-        }
-
+def generate_summary(score: int, issues: list, quantum_vulnerable: bool) -> dict:
+    """
+    Generates a structured report based on the scoring logic.
+    """
+    # Determine the status based on score threshold
+    if score >= 70 or quantum_vulnerable:
+        status = "HIGH"
+    elif score >= 40:
+        status = "MEDIUM"
     else:
-        return {
-            "status": "LOW", # CHANGED
-            "action": "No immediate action",
-            "reason": "Low sensitivity and secure encryption"
-        }
+        status = "LOW"
+        
+    # Determine basic action required
+    if status == "HIGH":
+        action = "Immediate action required: Replace vulnerable algorithms and remove hardcoded secrets."
+    elif status == "MEDIUM":
+        action = "Review code: Plan to upgrade algorithms in the near future."
+    else:
+        action = "No critical action required. Continue monitoring."
+
+    return {
+        "status": status,
+        "action": action,
+        "issues": issues,
+        "quantum_vulnerable": quantum_vulnerable
+    }
