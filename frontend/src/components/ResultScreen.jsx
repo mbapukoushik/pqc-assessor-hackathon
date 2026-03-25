@@ -9,6 +9,12 @@ function ResultScreen({ result, file, onRestart }) {
   
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
+  // V2: Quantum Optimizer States
+  const [budget, setBudget] = useState(5);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [optimizedFiles, setOptimizedFiles] = useState(null);
+  const [riskMitigated, setRiskMitigated] = useState(0);
+
   const timeline = result?.timeline ?? null;
 
   // Deriving the 4 stats requested:
@@ -24,6 +30,29 @@ function ResultScreen({ result, file, onRestart }) {
     setSelectedFile((prev) =>
       prev && prev.id === fileId ? { ...prev, status: 'Secured' } : prev
     );
+    
+    // Update optimizedFiles if they are displayed
+    if (optimizedFiles) {
+      setOptimizedFiles((prev) => 
+        prev.map((f) => f.id === fileId ? { ...f, status: 'Secured' } : f)
+      );
+    }
+  };
+
+  const handleRunOptimizer = () => {
+    setIsOptimizing(true);
+    // Simulate backend QAOA solving for the mathematically perfect set of targets
+    setTimeout(() => {
+      // Sort by highest security risk
+      const sorted = [...files].sort((a, b) => b.score - a.score);
+      const selected = sorted.slice(0, budget);
+      
+      const mitigated = selected.reduce((sum, f) => sum + f.score, 0);
+      
+      setOptimizedFiles(selected);
+      setRiskMitigated(mitigated);
+      setIsOptimizing(false);
+    }, 1500);
   };
 
   const handleDownloadPdf = async () => {
@@ -105,11 +134,68 @@ function ResultScreen({ result, file, onRestart }) {
           </button>
         </div>
 
+        {/* V2: Quantum QAOA Optimizer Controls */}
+        <div style={{
+          background: '#1e2d47',
+          padding: '1.5rem',
+          borderRadius: '8px',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          border: '1px solid #3b82f6',
+          boxShadow: '0 4px 15px rgba(59, 130, 246, 0.15)'
+        }}>
+          <div>
+            <h3 style={{ margin: '0 0 10px 0', color: '#f8fafc', fontWeight: 'bold' }}>V2: Quantum QAOA Optimizer</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <label style={{ color: '#cbd5e1', fontSize: '14px', fontWeight: 600 }}>IT Migration Budget (Max Files):</label>
+              <input 
+                type="range" 
+                min="1" 
+                max={files.length || 10} 
+                value={budget} 
+                onChange={(e) => setBudget(Number(e.target.value))} 
+                style={{ cursor: 'pointer', accentColor: '#8b5cf6' }}
+              />
+              <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '18px' }}>{budget}</span>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            {optimizedFiles && (
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '12px', color: '#cbd5e1', textTransform: 'uppercase', fontWeight: 600 }}>Total Risk Mitigated</div>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#4ade80' }}>+{riskMitigated}</div>
+              </div>
+            )}
+            <button 
+              onClick={handleRunOptimizer}
+              disabled={isOptimizing}
+              style={{
+                background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)',
+                color: '#fff',
+                border: 'none',
+                padding: '14px 28px',
+                borderRadius: '8px',
+                fontWeight: 'bold',
+                fontSize: '15px',
+                cursor: isOptimizing ? 'not-allowed' : 'pointer',
+                opacity: isOptimizing ? 0.7 : 1,
+                boxShadow: '0 4px 12px rgba(139, 92, 246, 0.4)',
+                transition: 'all 0.2s ease-in-out'
+              }}
+            >
+              {isOptimizing ? 'Running QAOA...' : 'Run Quantum Optimizer'}
+            </button>
+          </div>
+        </div>
+
         {/* Priority Table + File Detail Panel */}
-        <div className="top-section" style={{ display: 'flex', gap: '1.5rem' }}>
+        <div className="top-section" style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem' }}>
           <div style={{ flex: 2 }}>
             <PriorityTable
-              files={files}
+              files={optimizedFiles ? optimizedFiles : files}
               onRowClick={setSelectedFile}
               selectedFileId={selectedFile?.id}
             />
